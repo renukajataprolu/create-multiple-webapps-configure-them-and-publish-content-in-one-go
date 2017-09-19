@@ -1,0 +1,73 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      
+      "webApps":
+        {
+            "type":"array" 
+        }
+    },
+    "resources": [
+
+         
+        {
+            "apiVersion": "2014-04-01",
+            "name": "[parameters('webApps')[copyIndex()].siteName]",
+            "type": "Microsoft.Web/sites",
+            "location": "[resourceGroup().location]", 
+            "tags": {
+                "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('webApps')[copyIndex()].hostingPlanName)]": "Resource"
+            },
+            
+            "properties":
+            {
+                "name": "[parameters('webApps')[copyIndex()].siteName]",
+                "serverFarm": "[parameters('webApps')[copyIndex()].hostingPlanName]",
+              "siteConfig": {
+                "AlwaysOn": true,
+                "Use32BitWorkerProcess": false,
+                "scmSiteAlsoStopped": true,
+                "RequestTracingEnabled": false,
+                "HttpLoggingEnabled": true,
+                "applicationLogs": true,
+                "defaultDocuments": [
+                  "index.html",
+                  "hostingstart.html",
+                  "Default.html"
+                ]
+              },
+                    "clientCertEnabled": "[parameters('webApps')[copyIndex()].clientCertEnabled]",  
+                    "clientAffinityEnabled": "[parameters('webApps')[copyIndex()].clientAffinityEnabled]" 
+                },
+           
+                    "copy":
+                { 
+                    "name": "WebAppLoop", 
+                    "count": "[length(parameters('webApps'))]" 
+                },
+                "resources":
+                [
+                  {
+                    "name"      : "MSDeploy",
+                    "type"      : "extensions",
+                    "location"  : "[resourceGroup().location]",
+                    "apiVersion": "2015-08-01",
+                    "dependsOn" :
+                    [
+                                  "[concat('Microsoft.Web/sites/', parameters('webApps')[copyIndex()].siteName)]"
+                    ],
+                    "tags": 
+                    {
+                      "displayName": "webDeploy"
+                    },
+                    "properties":
+                    {
+                        "packageUri": "[parameters('webApps')[copyIndex()].packageuri]"
+                    }
+                  }
+                ]
+             }
+     ]
+
+}
